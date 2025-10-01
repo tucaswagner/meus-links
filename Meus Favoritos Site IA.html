@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Links Favoritos</title>
+<style>
+  body {margin:0; font-family:Arial, sans-serif; background:#f8f9fa; color:#333;}
+  header {
+    display:grid; grid-template-columns:auto 1fr auto; align-items:flex-start;
+    gap:1rem; padding:0.5rem 1rem; background:#0d3b66; color:#fff;
+  }
+  header h1 {margin:0; font-size:1.8rem;}
+  header p {margin:0; font-size:0.9rem; color:#eee;}
+  .left-top, .right-top {display:flex; flex-direction:column; gap:0.3rem;}
+  .right-top {align-items:flex-end;}
+  .controls {text-align:center; background:#fff; padding:0.5rem;}
+  .controls input, .controls select {padding:0.3rem; margin:0.2rem;}
+  #linksList {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:1rem; padding:1rem;
+  }
+  .card {
+    background:#fff9e6; border-radius:10px; padding:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    position:relative; transition:0.3s; opacity:0; transform:translateY(20px);
+  }
+  .card.show {opacity:1; transform:translateY(0);}
+  .card h3 {margin:0 0 0.3rem 0;}
+  .card .star {
+    position:absolute; top:10px; right:10px; cursor:pointer; font-size:1.3rem; color:#aaa;
+  }
+  .card .star.favorited {color:red;}
+  .links a {display:block; margin:0.3rem 0; padding:0.3rem; border-radius:5px; text-decoration:none; color:#fff;}
+  .links .link1 {background:#007bff;} /* azul */
+  .links .link2 {background:#ff9800;} /* laranja */
+  .links .link3 {background:#28a745;} /* verde */
+  .links img.favicon {width:16px; height:16px; margin-right:5px; vertical-align:middle;}
+  .tags {font-size:0.8rem; color:#555; margin-top:0.5rem;}
+  .actions {margin-top:0.5rem;}
+  .actions button {margin-right:0.3rem;}
+  #feedback {position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:#333; color:#fff; padding:0.5rem 1rem; border-radius:5px; display:none;}
+  #sidebar {position:fixed; top:0; left:-300px; width:280px; height:100%; background:#fff;
+    box-shadow:2px 0 6px rgba(0,0,0,0.2); padding:1rem; transition:0.3s; overflow-y:auto;}
+  #sidebar.active {left:0;}
+  #openAppBtn {
+    position:fixed; bottom:20px; left:20px; width:50px; height:50px; border:none;
+    border-radius:50%; background:#0d3b66; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 8px rgba(0,0,0,0.3);
+  }
+  #openAppBtn svg {width:28px; height:28px; fill:#fff;}
+
+  /* INPUTS SIDEBAR */
+  #sidebar input {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  #sidebar input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0,123,255,0.5);
+    outline: none;
+  }
+
+  /* BOTÕES SIDEBAR */
+  #sidebar button {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s, background-color 0.3s, box-shadow 0.3s;
+  }
+  #sidebar button#clearFieldsBtn {
+    background-color: #ff9800;
+    color: #fff;
+  }
+  #sidebar button#clearFieldsBtn:hover {
+    background-color: #ffb74d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  #sidebar button[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+  }
+  #sidebar button[type="submit"]:hover {
+    background-color: #3399ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left-top">
+    <button id="sidebarToggle">➕ Adicionar</button>
+    <button id="exportBtn">Exportar</button>
+    <button id="importBtn">Importar</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+  <div class="title-section" style="text-align:center;">
+    <h1>Meus Links Favoritos</h1>
+    <p>Guarde e organize seus sites favoritos em um só lugar</p>
+  </div>
+  <div class="right-top">
+    <button id="clearAllBtn">🗑️ Limpar Todos</button>
+    <div class="counter" id="counter">Você tem 0 links salvo(s)</div>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Buscar por título ou tags">
+  <select id="sortSelect">
+    <option value="date">Ordenar por Data</option>
+    <option value="title">Ordenar por Título</option>
+    <option value="tags">Ordenar por Tags</option>
+  </select>
+</div>
+
+<main id="linksList"></main>
+
+<!-- SIDEBAR FORM -->
+<div id="sidebar">
+  <h3>Adicionar / Editar Link</h3>
+  <form id="linkForm" style="display:flex; flex-direction:column; gap:0.5rem;">
+    <input type="text" id="title" placeholder="Título" required>
+    <input type="text" id="description" placeholder="Descrição">
+    <input type="url" id="url1" placeholder="Link 1" required>
+    <input type="text" id="name1" placeholder="Nome do Link 1">
+    <input type="url" id="url2" placeholder="Link 2">
+    <input type="text" id="name2" placeholder="Nome do Link 2">
+    <input type="url" id="url3" placeholder="Link 3">
+    <input type="text" id="name3" placeholder="Nome do Link 3">
+    <input type="text" id="tags" placeholder="Tags (separadas por vírgula)">
+    <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+      <button type="submit">Salvar</button>
+      <button type="button" id="clearFieldsBtn">Limpar Campos</button>
+    </div>
+  </form>
+</div>
+
+<button id="openAppBtn" onclick="document.querySelector('#sidebar').classList.toggle('active')">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+    <circle cx="128" cy="128" r="128" fill="#0d3b66"/>
+    <polygon points="128,32 154,124 248,124 170,176 196,256 128,208 60,256 86,176 8,124 102,124" fill="#ffffff"/>
+  </svg>
+</button>
+
+<div id="feedback"></div>
+
+<script>
+let links=JSON.parse(localStorage.getItem('links')||'[]');
+let editId=null;
+
+const linksList=document.getElementById('linksList');
+const form=document.getElementById('linkForm');
+const titleInput=document.getElementById('title');
+const descriptionInput=document.getElementById('description');
+const url1Input=document.getElementById('url1');
+const url2Input=document.getElementById('url2');
+const url3Input=document.getElementById('url3');
+const name1Input=document.getElementById('name1');
+const name2Input=document.getElementById('name2');
+const name3Input=document.getElementById('name3');
+const tagsInput=document.getElementById('tags');
+const searchInput=document.getElementById('searchInput');
+const sortSelect=document.getElementById('sortSelect');
+const sidebar=document.getElementById('sidebar');
+const sidebarToggle=document.getElementById('sidebarToggle');
+const feedback=document.getElementById('feedback');
+const clearAllBtn=document.getElementById('clearAllBtn');
+const counter=document.getElementById('counter');
+const exportBtn=document.getElementById('exportBtn');
+const importBtn=document.getElementById('importBtn');
+const importFile=document.getElementById('importFile');
+const clearFieldsBtn=document.getElementById('clearFieldsBtn');
+
+function saveLinks(){localStorage.setItem('links',JSON.stringify(links));}
+function favicon(url){try{const u=new URL(url);return u.origin+'/favicon.ico';}catch{return '';} }
+function showFeedback(msg,type='success'){feedback.textContent=msg;feedback.style.display='block';feedback.style.background=type==='success'?'#28a745':'#dc3545';setTimeout(()=>feedback.style.display='none',2000);}
+function updateCounter(){counter.textContent=`Você tem ${links.length} link${links.length!==1?'s':''} salvo(s)`;}
+
+function renderLinks(){
+  linksList.innerHTML='';
+  let filtered=links.filter(l=>{const q=searchInput.value.toLowerCase();return l.title.toLowerCase().includes(q)||(l.tags&&l.tags.toLowerCase().includes(q));});
+  if(sortSelect.value==='title') filtered.sort((a,b)=>a.title.localeCompare(b.title));
+  else if(sortSelect.value==='tags') filtered.sort((a,b)=>(a.tags||'').localeCompare(b.tags||'')); 
+  else filtered.sort((a,b)=>(b.favoriteOrder!==null)-(a.favoriteOrder!==null)||(a.favoriteOrder||0)-(b.favoriteOrder||0)||b.date-a.date);
+  filtered.forEach(link=>{
+    const card=document.createElement('div');
+    card.className='card';card.dataset.id=link.id;
+    card.innerHTML=`
+      <span class="star ${link.favoriteOrder!==null?'favorited':''}" onclick="toggleFavorite('${link.id}')">★</span>
+      <h3>${link.title}</h3>
+      <p>${link.description||''}</p>
+      <div class="links">
+        ${link.url1?`<a class="link1" href="${link.url1}" target="_blank"><img src="${favicon(link.url1)}" class="favicon"> ${link.name1||link.url1}</a>`:``}
+        ${link.url2?`<a class="link2" href="${link.url2}" target="_blank"><img src="${favicon(link.url2)}" class="favicon"> ${link.name2||link.url2}</a>`:``}
+        ${link.url3?`<a class="link3" href="${link.url3}" target="_blank"><img src="${favicon(link.url3)}" class="favicon"> ${link.name3||link.url3}</a>`:``}
+      </div>
+      <div class="tags">Tags: ${link.tags||'—'}</div>
+      <div class="actions">
+        <button onclick="editLink('${link.id}')">✏️ Editar</button>
+        <button onclick="deleteLink('${link.id}')">🗑️ Excluir</button>
+      </div>
+    `;
+    linksList.appendChild(card); setTimeout(()=>card.classList.add('show'),50);
+  });
+  updateCounter();
+}
+
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const title=titleInput.value.trim();const description=descriptionInput.value.trim();
+  const url1=url1Input.value.trim();const url2=url2Input.value.trim();const url3=url3Input.value.trim();
+  const name1=name1Input.value.trim();const name2=name2Input.value.trim();const name3=name3Input.value.trim();
+  const tags=tagsInput.value.trim();
+  if(!title||!url1){showFeedback('Título e Link 1 são obrigatórios','error');return;}
+  if(editId!==null){
+    const idx=links.findIndex(l=>l.id===editId.toString());
+    if(idx!==-1){
+      links[idx]={...links[idx],title,description,url1,url2,url3,name1,name2,name3,tags,date:new Date().getTime()};
+      editId=null;
+      showFeedback('Link atualizado','success');
+    }
+  } else {
+    links.push({id:Date.now().toString(),title,description,url1,url2,url3,name1,name2,name3,tags,date:new Date().getTime(),favoriteOrder:null});
+    showFeedback('Link salvo','success');
+  }
+  saveLinks();form.reset();sidebar.classList.remove('active');renderLinks();
+});
+
+window.editLink=id=>{const link=links.find(l=>l.id===id.toString());if(!link)return;
+  titleInput.value=link.title;descriptionInput.value=link.description||'';
+  url1Input.value=link.url1;url2Input.value=link.url2||'';url3Input.value=link.url3||'';
+  name1Input.value=link.name1||'';name2Input.value=link.name2||'';name3Input.value=link.name3||'';
+  tagsInput.value=link.tags;editId=link.id;sidebar.classList.add('active');};
+
+window.deleteLink=id=>{if(confirm('Deseja realmente excluir este link?')){links=links.filter(l=>l.id!==id.toString());saveLinks();renderLinks();showFeedback('Link excluído','success');}};
+window.toggleFavorite=id=>{const link=links.find(l=>l.id===id.toString());if(!link)return;link.favoriteOrder=link.favoriteOrder===null?Date.now():null;saveLinks();renderLinks();};
+searchInput.addEventListener('input',renderLinks);sortSelect.addEventListener('change',renderLinks);
+exportBtn.addEventListener('click',()=>{const blob=new Blob([JSON.stringify(links,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='favoritos.json';a.click();URL.revokeObjectURL(a.href);});
+importBtn.addEventListener('click',()=>importFile.click());
+importFile.addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const imported=JSON.parse(ev.target.result);if(Array.isArray(imported)){links=imported;saveLinks();renderLinks();showFeedback('Importação concluída!','success');}else showFeedback('Arquivo inválido','error');}catch{showFeedback('Erro ao importar','error');}};reader.readAsText(file);});
+clearAllBtn.addEventListener('click',()=>{if(confirm('Deseja realmente apagar todos os links?')){links=[];saveLinks();renderLinks();showFeedback('Todos os links foram apagados','success');}});
+
+sidebarToggle.addEventListener('click',()=>sidebar.classList.toggle('active'));
+
+// Limpar campos do formulário
+clearFieldsBtn.addEventListener('click',()=>{
+  titleInput.value='';
+  descriptionInput.value='';
+  url1Input.value='';
+  url2Input.value='';
+  url3Input.value='';
+  name1Input.value='';
+  name2Input.value='';
+  name3Input.value='';
+  tagsInput.value='';
+});
+
+renderLinks();
+</script>
+</body>
+</html>
