@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Links Favoritos</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <div class="container">
+    <h1>📌 Meus Links Favoritos</h1>
+    <button class="add-btn" onclick="openModal()">➕ Adicionar Link</button>
+    <button class="clear-btn" onclick="clearLinks()">🗑️ Limpar Todos</button>
+    <ul id="linkList"></ul>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h2>Adicionar Novo Link</h2>
+      <input type="text" id="linkName" placeholder="Nome do site">
+      <input type="url" id="linkUrl" placeholder="URL (https://...)">
+      <div class="modal-buttons">
+        <button onclick="saveLink()">Salvar</button>
+        <button onclick="clearModal()">Limpar</button>
+        <button onclick="closeModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
